@@ -5,6 +5,7 @@ from tkinter import PhotoImage
 import matplotlib.pyplot as plt
 import numpy as np
 
+# git tst
 
 # Define the size of the board
 SIZE = 4
