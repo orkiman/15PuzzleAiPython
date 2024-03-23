@@ -1,0 +1,141 @@
+import random
+import tkinter as tk
+from tkinter import messagebox
+from tkinter import PhotoImage
+import matplotlib.pyplot as plt
+import numpy as np
+
+
+# Define the size of the board
+SIZE = 4
+
+# Function to generate a shuffled board with guaranteed solvability
+def generate_solvable_board():
+    # Create a list of numbers
+    numbers = list(range(SIZE * SIZE))
+    # Shuffle the numbers
+    random.shuffle(numbers)
+
+    # Ensure the generated board is solvable
+    while not is_solvable(numbers):
+        random.shuffle(numbers)
+
+    return numbers
+
+# Function to count the number of inversions in a list
+def count_inversions(lst):
+    count = 0
+    for i in range(len(lst)):
+        for j in range(i + 1, len(lst)):
+            if lst[i] > lst[j] and lst[i] != 0 and lst[j] != 0:
+                count += 1
+    return count
+
+# Function to check if a board is solvable
+def is_solvable(board):
+    inversions = count_inversions(board)
+    if SIZE % 2 != 0:  # For odd-sized boards
+        return inversions % 2 == 0
+    else:  # For even-sized boards
+        blank_row = SIZE - board.index(0) // SIZE
+        return (inversions + blank_row) % 2 != 0
+
+# Function to check if the game is won
+def is_won(board):
+    return all(board[i] == i + 1 for i in range(len(board) - 1)) and board[-1] == 0
+
+# Function to move the number adjacent to the empty space
+def move(board, blank_index, direction):
+    def swap(board, i, j):
+        board[i], board[j] = board[j], board[i]
+        return board
+    
+    if direction == "↓" and blank_index >= SIZE:
+        neighbor_index = blank_index - SIZE
+    elif direction == "↑" and blank_index < SIZE * (SIZE - 1):
+        neighbor_index = blank_index + SIZE
+    elif direction == "→" and blank_index % SIZE != 0:
+        neighbor_index = blank_index - 1
+    elif direction == "←" and (blank_index + 1) % SIZE != 0:
+        neighbor_index = blank_index + 1
+    else:
+        print("Invalid move!")
+        return board, blank_index
+    
+    board = swap(board, blank_index, neighbor_index)
+    
+    return board, neighbor_index
+
+# Main game loop
+def main():
+    root = tk.Tk()
+    root.title("15 Puzzle. play with keyboard arrows")
+
+    # Create a gradient of colors from light to dark
+    gradient_colors = plt.cm.Blues(np.linspace(0.3, 1, SIZE * SIZE))
+
+    board = generate_solvable_board()
+    blank_index = board.index(0)
+
+    buttons = []
+    for i in range(SIZE):
+        row = []
+        for j in range(SIZE):
+            number = board[i * SIZE + j]
+            if number == 0:
+                color = "#FFB6C1"  # Light pink
+            else:
+                color = gradient_colors[number]
+                color = '#%02x%02x%02x' % (int(color[0]*255), int(color[1]*255), int(color[2]*255))  # Convert RGB to hex
+            button = tk.Button(root, text=str(number) if number != 0 else "", state="normal" if number != 0 else "disabled", bg=color, width=4, height=2, font=("Courier", 24))
+            button.grid(row=i, column=j)
+            row.append(button)
+        buttons.append(row)
+
+    # Function to update the buttons' text and color
+    def update_buttons():
+        nonlocal gradient_colors  # Make gradient_colors accessible within this function
+        for i in range(SIZE):
+            for j in range(SIZE):
+                number = board[i * SIZE + j]
+                if number == 0:
+                    color = "#FFB6C1"  # Light pink
+                else:
+                    color = gradient_colors[number]
+                    color = '#%02x%02x%02x' % (int(color[0]*255), int(color[1]*255), int(color[2]*255))  # Convert RGB to hex
+                buttons[i][j]['text'] = str(number) if number != 0 else ""
+                buttons[i][j]['bg'] = color
+                buttons[i][j]['state'] = "normal" if number != 0 else "disabled"
+    # Function to handle key presses
+    def key(event):
+        nonlocal blank_index
+        nonlocal board
+        if event.keysym == 'Up':
+            move_direction = "↑"
+        elif event.keysym == 'Down':
+            move_direction = "↓"
+        elif event.keysym == 'Left':
+            move_direction = "←"
+        elif event.keysym == 'Right':
+            move_direction = "→"
+        else:
+            return
+        board, blank_index = move(board, blank_index, move_direction)
+        update_buttons()
+        if is_won(board):
+        #     # Create a gradient of colors from light to dark
+        #     gradient_colors = plt.cm.Blues(np.linspace(0.3, 1, SIZE * SIZE))
+        #     for i in range(SIZE):
+        #         for j in range(SIZE):
+        #             color = gradient_colors[i * SIZE + j]
+        #             color = '#%02x%02x%02x' % (int(color[0]*255), int(color[1]*255), int(color[2]*255))  # Convert RGB to hex
+        #             buttons[i][j]['bg'] = color
+            messagebox.showinfo("Congratulations!", "You solved the puzzle!")
+            root.quit()
+
+    root.bind('<Key>', key)
+
+    root.mainloop()
+
+if __name__ == "__main__":
+    main()
